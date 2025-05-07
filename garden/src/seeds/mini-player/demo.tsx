@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, use } from "react";
+import { useRef, useState, useEffect } from "react";
 
 type SnapPoints =
   | "top-left"
@@ -12,13 +12,20 @@ type SnapPoints =
   | "top-center"
   | "bottom-center";
 
+type Position = {
+  x: number;
+  y: number;
+};
+
 type MiniPlayerProps = {
   open?: boolean;
   snapping?: boolean;
   offset?: number;
   initialPosition?: SnapPoints;
-  initialTransform?: { x: number; y: number };
+  initialTransform?: Position;
   noDrag?: boolean;
+  externalRef?: HTMLVideoElement | HTMLIFrameElement | null;
+  onReturn?: () => void;
 };
 
 export function MiniPlayer({
@@ -28,14 +35,20 @@ export function MiniPlayer({
   noDrag = false,
   initialPosition = "bottom-right",
   initialTransform = { x: 0, y: 0 },
+  externalRef,
+  onReturn,
 }: MiniPlayerProps) {
   const playerRef = useRef<HTMLDivElement>(null);
-
+  const originalParentRef = useRef<HTMLElement | null>(null);
+  const mouseStartRef = useRef<Position>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
-  const [transform, setTransform] = useState(initialTransform);
+  const [transform, setTransform] = useState<Position>(initialTransform);
+
+  const clickThreshold = 5;
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    mouseStartRef.current = { x: e.clientX, y: e.clientY };
     setDragging(true);
     setStartDragPosition({ x: e.clientX, y: e.clientY });
   };
@@ -43,9 +56,94 @@ export function MiniPlayer({
   const handleTouchStart = (e: React.TouchEvent) => {
     if (noDrag) return;
     const touch = e.touches[0];
+    mouseStartRef.current = { x: touch.clientX, y: touch.clientY };
     setDragging(true);
     setStartDragPosition({ x: touch.clientX, y: touch.clientY });
   };
+
+  const findClosestSnapPoint = (
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => {
+    const margin = offset;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    const snapPoints = [
+      { x: margin, y: margin },
+      { x: screenWidth / 2 - width / 2, y: margin },
+      { x: screenWidth - width - margin, y: margin },
+      { x: margin, y: screenHeight / 2 - height / 2 },
+      { x: screenWidth - width - margin, y: screenHeight / 2 - height / 2 },
+      { x: margin, y: screenHeight - height - margin },
+      { x: screenWidth / 2 - width / 2, y: screenHeight - height - margin },
+      { x: screenWidth - width - margin, y: screenHeight - height - margin },
+    ];
+
+    let closest = snapPoints[0];
+    let minDist = Infinity;
+
+    for (const point of snapPoints) {
+      const dist = Math.hypot(x - point.x, y - point.y);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = point;
+      }
+    }
+
+    return closest;
+  };
+
+  useEffect(() => {
+    const video = externalRef;
+    const container = playerRef.current;
+    if (!video || !container) return;
+
+    if (!originalParentRef.current && video.parentElement) {
+      originalParentRef.current = video.parentElement;
+    }
+
+    container.appendChild(video);
+
+    const forwardMouse = (e: Event) => {
+      const mouse = e as MouseEvent;
+      const cloned = new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: mouse.clientX,
+        clientY: mouse.clientY,
+        buttons: mouse.buttons,
+      });
+      container.dispatchEvent(cloned);
+    };
+
+    const forwardTouch = (e: Event) => {
+      const touchEvent = e as TouchEvent;
+      const touch = touchEvent.touches[0];
+      const simulated = new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        buttons: 1,
+      });
+      container.dispatchEvent(simulated);
+    };
+
+    video.addEventListener("mousedown", forwardMouse);
+    video.addEventListener("touchstart", forwardTouch);
+
+    return () => {
+      video.removeEventListener("mousedown", forwardMouse);
+      video.removeEventListener("touchstart", forwardTouch);
+      if (originalParentRef.current) {
+        originalParentRef.current.appendChild(video);
+        onReturn?.();
+      }
+    };
+  }, [externalRef]);
 
   useEffect(() => {
     const updateInitialPosition = () => {
@@ -55,107 +153,14 @@ export function MiniPlayer({
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
 
-        let x = 0;
-        let y = 0;
-
-        switch (initialPosition) {
-          case "top-left":
-            x = offset;
-            y = offset;
-            break;
-          case "top-right":
-            x = screenWidth - width - offset;
-            y = offset;
-            break;
-          case "bottom-left":
-            x = offset;
-            y = screenHeight - height - offset;
-            break;
-          case "bottom-right":
-            x = screenWidth - width - offset;
-            y = screenHeight - height - offset;
-            break;
-          case "center-left":
-            x = offset;
-            y = screenHeight / 2 - height / 2;
-            break;
-          case "center-right":
-            x = screenWidth - width - offset;
-            y = screenHeight / 2 - height / 2;
-            break;
-          case "top-center":
-            x = screenWidth / 2 - width / 2;
-            y = offset;
-            break;
-          case "bottom-center":
-            x = screenWidth / 2 - width / 2;
-            y = screenHeight - height - offset;
-            break;
-          default:
-            break;
-        }
-
-        setTransform({ x, y });
+        const transform = findClosestSnapPoint(0, 0, width, height);
+        setTransform(transform);
       }
     };
 
     updateInitialPosition();
-
     window.addEventListener("resize", updateInitialPosition);
-    return () => {
-      window.removeEventListener("resize", updateInitialPosition);
-    };
-  }, [initialPosition, offset, open]);
-
-  useEffect(() => {
-    if (initialPosition && playerRef.current) {
-      const width = playerRef.current.offsetWidth;
-      const height = playerRef.current.offsetHeight;
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-
-      let x = 0;
-      let y = 0;
-
-      switch (initialPosition) {
-        case "top-left":
-          x = offset;
-          y = offset;
-          break;
-        case "top-right":
-          x = screenWidth - width - offset;
-          y = offset;
-          break;
-        case "bottom-left":
-          x = offset;
-          y = screenHeight - height - offset;
-          break;
-        case "bottom-right":
-          x = screenWidth - width - offset;
-          y = screenHeight - height - offset;
-          break;
-        case "center-left":
-          x = offset;
-          y = screenHeight / 2 - height / 2;
-          break;
-        case "center-right":
-          x = screenWidth - width - offset;
-          y = screenHeight / 2 - height / 2;
-          break;
-        case "top-center":
-          x = screenWidth / 2 - width / 2;
-          y = offset;
-          break;
-        case "bottom-center":
-          x = screenWidth / 2 - width / 2;
-          y = screenHeight - height - offset;
-          break;
-        default:
-          break;
-      }
-
-      setTransform({ x, y });
-    }
+    return () => window.removeEventListener("resize", updateInitialPosition);
   }, [initialPosition, offset, open]);
 
   useEffect(() => {
@@ -163,12 +168,7 @@ export function MiniPlayer({
       if (!dragging) return;
       const dx = e.clientX - startDragPosition.x;
       const dy = e.clientY - startDragPosition.y;
-
-      setTransform((prev) => ({
-        x: prev.x + dx,
-        y: prev.y + dy,
-      }));
-
+      setTransform((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
       setStartDragPosition({ x: e.clientX, y: e.clientY });
     };
 
@@ -177,18 +177,36 @@ export function MiniPlayer({
       const touch = e.touches[0];
       const dx = touch.clientX - startDragPosition.x;
       const dy = touch.clientY - startDragPosition.y;
-
-      setTransform((prev) => ({
-        x: prev.x + dx,
-        y: prev.y + dy,
-      }));
-
+      setTransform((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
       setStartDragPosition({ x: touch.clientX, y: touch.clientY });
     };
 
-    const handleEnd = () => {
+    const handleEnd = (e?: MouseEvent | TouchEvent) => {
       if (!dragging) return;
       setDragging(false);
+
+      const endX =
+        e instanceof MouseEvent
+          ? e.clientX
+          : (e as TouchEvent).changedTouches?.[0]?.clientX;
+      const endY =
+        e instanceof MouseEvent
+          ? e.clientY
+          : (e as TouchEvent).changedTouches?.[0]?.clientY;
+      const deltaX = Math.abs(endX - mouseStartRef.current.x);
+      const deltaY = Math.abs(endY - mouseStartRef.current.y);
+      const isClick = deltaX < clickThreshold && deltaY < clickThreshold;
+
+      if (!isClick && externalRef) {
+        const blocker = (clickEvent: Event) => {
+          clickEvent.preventDefault();
+          clickEvent.stopImmediatePropagation();
+        };
+        externalRef.addEventListener("click", blocker, {
+          once: true,
+          capture: true,
+        });
+      }
 
       if (snapping && playerRef.current) {
         const width = playerRef.current.offsetWidth;
@@ -216,68 +234,30 @@ export function MiniPlayer({
     };
   }, [dragging, startDragPosition, snapping, transform]);
 
-  const findClosestSnapPoint = (
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    const margin = offset;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    const snapPoints = [
-      { x: margin, y: margin }, // top-left
-      { x: screenWidth / 2 - width / 2, y: margin }, // top-center
-      { x: screenWidth - width - margin, y: margin }, // top-right
-      { x: margin, y: screenHeight / 2 - height / 2 }, // center-left
-      { x: screenWidth - width - margin, y: screenHeight / 2 - height / 2 }, // center-right
-      { x: margin, y: screenHeight - height - margin }, // bottom-left
-      { x: screenWidth / 2 - width / 2, y: screenHeight - height - margin }, // bottom-center
-      { x: screenWidth - width - margin, y: screenHeight - height - margin }, // bottom-right
-    ];
-
-    let closest = snapPoints[0];
-    let minDist = Infinity;
-
-    for (const point of snapPoints) {
-      const dist = Math.hypot(x - point.x, y - point.y);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = point;
-      }
-    }
-
-    return closest;
-  };
-
   useEffect(() => {
     document.body.style.userSelect = dragging ? "none" : "";
   }, [dragging]);
 
   return (
-    <div className="inset-0 fixed pointer-events-none">
-      {open && (
-        <div
-          ref={playerRef}
-          data-state={open ? "open" : "closed"}
-          className="absolute w-90 h-50 bg-neutral-900 rounded-3xl duration-300"
-          onMouseDown={!noDrag ? handleMouseDown : undefined}
-          onTouchStart={!noDrag ? handleTouchStart : undefined}
-          style={{
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${
-              open ? 1 : 0.8
-            })`,
-            transition: dragging
-              ? "none"
-              : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
-            pointerEvents: "all",
-            zIndex: 9999,
-            cursor: dragging ? "grabbing" : "grab",
-            opacity: open ? 1 : 0,
-          }}
-        />
-      )}
+    <div className="inset-0 fixed pointer-events-none z-50">
+      <div
+        ref={playerRef}
+        data-state={open ? "open" : "closed"}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        className="absolute w-90 h-50 bg-neutral-900 rounded-2xl duration-300 overflow-clip"
+        style={{
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${
+            open ? 1 : 0.75
+          })`,
+          transition: dragging
+            ? "none"
+            : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+          pointerEvents: "all",
+          zIndex: 9999,
+          opacity: open ? 1 : 0,
+        }}
+      />
     </div>
   );
 }

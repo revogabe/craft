@@ -8,8 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function PlaygroundLayout({ children }: NextLayout) {
-  if (process.env.ENVIRONMENT !== "development") {
-    return redirect("/404");
-  }
   return <main className="min-h-screen w-full mx-auto">{children}</main>;
 }
