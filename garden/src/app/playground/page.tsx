@@ -56,7 +56,7 @@ export default function PlaygroundPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen container border-x border-neutral-800 border-dashed mx-auto">
-      <div className="w-full min-h-screen flex gap-8 p-10">
+      <div className="w-full min-h-screen flex flex-col lg:flex-row gap-8 p-10">
         {videos.map((video) => (
           <div
             key={video.id}
