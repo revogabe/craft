@@ -28,6 +28,8 @@ type MiniPlayerProps = {
   onReturn?: () => void;
 };
 
+const CLICK_THRESHOLD = 5;
+
 export function MiniPlayer({
   open = false,
   snapping = false,
@@ -41,11 +43,10 @@ export function MiniPlayer({
   const playerRef = useRef<HTMLDivElement>(null);
   const originalParentRef = useRef<HTMLElement | null>(null);
   const mouseStartRef = useRef<Position>({ x: 0, y: 0 });
+
   const [dragging, setDragging] = useState(false);
   const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
   const [transform, setTransform] = useState<Position>(initialTransform);
-
-  const clickThreshold = 5;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     mouseStartRef.current = { x: e.clientX, y: e.clientY };
@@ -150,11 +151,16 @@ export function MiniPlayer({
       if (initialPosition && playerRef.current) {
         const width = playerRef.current.offsetWidth;
         const height = playerRef.current.offsetHeight;
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
+        const currentX = transform.x;
+        const currentY = transform.y;
 
-        const transform = findClosestSnapPoint(0, 0, width, height);
-        setTransform(transform);
+        const newTransform = findClosestSnapPoint(
+          currentX,
+          currentY,
+          width,
+          height
+        );
+        setTransform(newTransform);
       }
     };
 
@@ -195,7 +201,7 @@ export function MiniPlayer({
           : (e as TouchEvent).changedTouches?.[0]?.clientY;
       const deltaX = Math.abs(endX - mouseStartRef.current.x);
       const deltaY = Math.abs(endY - mouseStartRef.current.y);
-      const isClick = deltaX < clickThreshold && deltaY < clickThreshold;
+      const isClick = deltaX < CLICK_THRESHOLD && deltaY < CLICK_THRESHOLD;
 
       if (!isClick && externalRef) {
         const blocker = (clickEvent: Event) => {
