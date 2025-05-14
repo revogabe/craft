@@ -13,21 +13,21 @@ type Video = {
 const videos: Video[] = [
   {
     id: "warriors-1",
-    src: "nba.mp4",
+    src: "gta.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",
   },
   {
     id: "warriors-2",
-    src: "nba.mp4",
+    src: "gta.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",
   },
   {
     id: "warriors-3",
-    src: "nba.mp4",
+    src: "gta.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",
@@ -86,13 +86,7 @@ export default function PlaygroundPage() {
           </div>
         ))}
 
-        <MiniPlayer
-          externalRef={activeRef}
-          open={!!activeRef}
-          initialPosition="bottom-center"
-          initialTransform={{ x: 50099, y: 9999 }}
-          snapping
-        />
+        <MiniPlayer externalRef={activeRef} open={!!activeRef} />
       </div>
     </div>
   );

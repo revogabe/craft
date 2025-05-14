@@ -1,7 +1,17 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { createContext } from "@/utils/create-context";
+import React from "react";
 import { findClosestSnapPoint } from "./utils/findClosestSnapPoint";
+
+/* ----------------------------------------------------------------------------
+ * Types
+ * --------------------------------------------------------------------------*/
+
+type PrimitiveDivElement = React.ComponentRef<"div">;
+type PrimitiveDivProps = React.ComponentPropsWithoutRef<"div">;
+
+type PictureInPictureElement = HTMLVideoElement | HTMLIFrameElement | null;
 
 type SnapPoints =
   | "top-left"
@@ -18,36 +28,114 @@ type Position = {
   y: number;
 };
 
-type MiniPlayerProps = {
+type MiniPlayerContextValue = {
+  open: boolean;
+  snapping: boolean;
+  offset: number;
+  clickThreshold: number;
+  initialPosition: SnapPoints;
+  initialTransform: Position;
+  noDrag: boolean;
+  externalRef?: HTMLVideoElement | HTMLIFrameElement | null;
+  togglePictureInPicture: (ref: PictureInPictureElement) => void;
+  onReturn?: () => void;
+};
+
+export interface MiniPlayerProviderProps extends PrimitiveDivProps {
   open?: boolean;
   snapping?: boolean;
   offset?: number;
+  clickThreshold?: number;
   initialPosition?: SnapPoints;
   initialTransform?: Position;
   noDrag?: boolean;
   externalRef?: HTMLVideoElement | HTMLIFrameElement | null;
   onReturn?: () => void;
-};
+}
 
-const CLICK_THRESHOLD = 5;
+/* ----------------------------------------------------------------------------
+ * Component Form:Field
+ * --------------------------------------------------------------------------*/
 
-export function MiniPlayer({
-  open = false,
-  snapping = false,
-  offset = 16,
-  noDrag = false,
-  initialPosition = "bottom-right",
-  initialTransform = { x: 0, y: 0 },
-  externalRef,
-  onReturn,
-}: MiniPlayerProps) {
-  const playerRef = useRef<HTMLDivElement>(null);
-  const originalParentRef = useRef<HTMLElement | null>(null);
-  const mouseStartRef = useRef<Position>({ x: 0, y: 0 });
+const PROVIDER_NAME = "MiniPlayerProvider";
 
-  const [dragging, setDragging] = useState(false);
-  const [startDragPosition, setStartDragPosition] = useState({ x: 0, y: 0 });
-  const [transform, setTransform] = useState<Position>(initialTransform);
+const [MiniPlayerProvider, useMiniPlayerContext] =
+  createContext<MiniPlayerContextValue>(PROVIDER_NAME);
+
+export const Provider = React.forwardRef<
+  PrimitiveDivElement,
+  MiniPlayerProviderProps
+>((props, ref) => {
+  const {
+    children,
+    open = false,
+    snapping = false,
+    offset = 16,
+    clickThreshold = 5,
+    noDrag = false,
+    initialPosition = "bottom-right",
+    initialTransform = { x: 0, y: 0 },
+    externalRef,
+    onReturn,
+    ...providerProps
+  } = props;
+
+  const [activeRef, setActiveRef] =
+    React.useState<PictureInPictureElement>(null);
+
+  const handleTogglePictureInPicture = (ref: PictureInPictureElement) => {
+    setActiveRef((prev) => (prev === ref ? null : ref));
+  };
+
+  return (
+    <MiniPlayerProvider
+      open={!!activeRef}
+      snapping={snapping}
+      offset={offset}
+      clickThreshold={clickThreshold}
+      initialPosition={initialPosition}
+      initialTransform={initialTransform}
+      noDrag={noDrag}
+      externalRef={activeRef}
+      togglePictureInPicture={handleTogglePictureInPicture}
+      onReturn={onReturn}
+    >
+      <div ref={ref} {...providerProps}>
+        {children}
+      </div>
+    </MiniPlayerProvider>
+  );
+});
+
+Provider.displayName = PROVIDER_NAME;
+
+const PICTURE_NAME = "PictureInPicture";
+
+export const PictureInPicture = (props: PrimitiveDivProps) => {
+  const { ...pictureInPictureProps } = props;
+
+  const {
+    open,
+    snapping,
+    offset,
+    clickThreshold,
+    initialPosition,
+    initialTransform,
+    noDrag,
+    externalRef,
+    onReturn,
+  } = useMiniPlayerContext(PICTURE_NAME);
+
+  const playerRef = React.useRef<HTMLDivElement>(null);
+  const originalParentRef = React.useRef<HTMLElement | null>(null);
+  const mouseStartRef = React.useRef<Position>({ x: 0, y: 0 });
+
+  const [dragging, setDragging] = React.useState(false);
+  const [startDragPosition, setStartDragPosition] = React.useState({
+    x: 0,
+    y: 0,
+  });
+  const [transform, setTransform] = React.useState<Position>(initialTransform);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     mouseStartRef.current = { x: e.clientX, y: e.clientY };
@@ -63,7 +151,7 @@ export function MiniPlayer({
     setStartDragPosition({ x: touch.clientX, y: touch.clientY });
   };
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const video = externalRef;
     const container = playerRef.current;
     if (!video || !container) return;
@@ -112,7 +200,7 @@ export function MiniPlayer({
     };
   }, [externalRef]);
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const updateInitialPosition = () => {
       if (initialPosition && playerRef.current) {
         const width = playerRef.current.offsetWidth;
@@ -136,7 +224,7 @@ export function MiniPlayer({
     return () => window.removeEventListener("resize", updateInitialPosition);
   }, [initialPosition, offset, open]);
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
       const dx = e.clientX - startDragPosition.x;
@@ -168,7 +256,7 @@ export function MiniPlayer({
           : (e as TouchEvent).changedTouches?.[0]?.clientY;
       const deltaX = Math.abs(endX - mouseStartRef.current.x);
       const deltaY = Math.abs(endY - mouseStartRef.current.y);
-      const isClick = deltaX < CLICK_THRESHOLD && deltaY < CLICK_THRESHOLD;
+      const isClick = deltaX < clickThreshold && deltaY < clickThreshold;
 
       if (!isClick && externalRef) {
         const blocker = (clickEvent: Event) => {
@@ -208,13 +296,14 @@ export function MiniPlayer({
     };
   }, [dragging, startDragPosition, snapping, transform]);
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     document.body.style.userSelect = dragging ? "none" : "";
   }, [dragging]);
 
   return (
     <div className="inset-0 fixed pointer-events-none z-50">
       <div
+        {...pictureInPictureProps}
         ref={playerRef}
         data-state={open ? "open" : "closed"}
         onMouseDown={handleMouseDown}
@@ -228,10 +317,30 @@ export function MiniPlayer({
             ? "none"
             : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
           pointerEvents: "all",
-          zIndex: 9999,
           opacity: open ? 1 : 0,
         }}
       />
     </div>
   );
-}
+};
+
+PictureInPicture.displayName = PICTURE_NAME;
+
+/* ----------------------------------------------------------------------------
+ * Exports
+ * --------------------------------------------------------------------------*/
+
+export const useMiniPlayer = () => useMiniPlayerContext("useMiniPlayer");
+
+export {
+  Provider as MiniPlayerProvider,
+  PictureInPicture as MiniPlayerPictureInPicture,
+};
+
+export const MiniPlayer = Object.assign(
+  {},
+  {
+    Provider,
+    PictureInPicture,
+  }
+);
