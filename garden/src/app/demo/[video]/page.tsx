@@ -2,11 +2,16 @@
 
 import { useMiniPlayer } from "@/seeds/mini-player/mini-player";
 import type { NextPage } from "@/types/next";
+import dynamic from "next/dynamic";
 import { use, useRef } from "react";
+
+const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
+  ssr: false,
+});
 
 export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
   const { video } = use(params);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<any | null>(null);
   const { open, togglePictureInPicture } = useMiniPlayer();
 
   return (
@@ -14,11 +19,16 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
       <div className="w-full min-h-screen flex flex-col lg:flex-row gap-8 p-10">
         <div className="h-100 w-100 bg-neutral-950 border border-neutral-900 rounded-3xl flex flex-col justify-between items-start p-4 gap-4">
           <div className="w-full h-[200px] rounded-2xl bg-neutral-900 overflow-hidden relative">
-            <video
+            <MuxPlayer
               ref={videoRef}
-              src={`/videos/nba.mp4`}
-              className="absolute top-0 left-0 w-full h-full object-cover"
-              controls
+              // className="absolute top-0 left-0 w-full h-full object-cover"
+              playbackId="a4nOgmxGWg6gULfcBbAa00gXyfcwPnAFldF8RdsNyk8M"
+              autoPlay
+              metadata={{
+                video_id: "video-id-54321",
+                video_title: "Test video title",
+                viewer_user_id: "user-id-007",
+              }}
             />
           </div>
 
