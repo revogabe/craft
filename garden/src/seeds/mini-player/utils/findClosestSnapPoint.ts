@@ -1,6 +1,6 @@
 export const findClosestSnapPoint = (
-  x: number,
-  y: number,
+  left: number,
+  top: number,
   width: number,
   height: number,
   offset: number
@@ -10,21 +10,27 @@ export const findClosestSnapPoint = (
   const screenHeight = window.innerHeight;
 
   const snapPoints = [
-    { x: margin, y: margin },
-    { x: screenWidth / 2 - width / 2, y: margin },
-    { x: screenWidth - width - margin, y: margin },
-    { x: margin, y: screenHeight / 2 - height / 2 },
-    { x: screenWidth - width - margin, y: screenHeight / 2 - height / 2 },
-    { x: margin, y: screenHeight - height - margin },
-    { x: screenWidth / 2 - width / 2, y: screenHeight - height - margin },
-    { x: screenWidth - width - margin, y: screenHeight - height - margin },
+    { left: margin, top: margin },
+    { left: screenWidth / 2 - width / 2, top: margin },
+    { left: screenWidth - width - margin, top: margin },
+    { left: margin, top: screenHeight / 2 - height / 2 },
+    { left: screenWidth - width - margin, top: screenHeight / 2 - height / 2 },
+    { left: margin, top: screenHeight - height - margin },
+    {
+      left: screenWidth / 2 - width / 2,
+      top: screenHeight - height - margin,
+    },
+    {
+      left: screenWidth - width - margin,
+      top: screenHeight - height - margin,
+    },
   ];
 
   let closest = snapPoints[0];
   let minDist = Infinity;
 
   for (const point of snapPoints) {
-    const dist = Math.hypot(x - point.x, y - point.y);
+    const dist = Math.hypot(left - point.left, top - point.top);
     if (dist < minDist) {
       minDist = dist;
       closest = point;

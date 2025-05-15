@@ -1,8 +1,9 @@
 "use client";
 
+import React, { useState } from "react";
 import { createContext } from "@/utils/create-context";
-import React from "react";
 import { findClosestSnapPoint } from "./utils/findClosestSnapPoint";
+import { Resizable } from "re-resizable";
 
 /* ----------------------------------------------------------------------------
  * Types
@@ -28,6 +29,32 @@ type Position = {
   y: number;
 };
 
+type Size = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+type ResizeDirection =
+  | "top"
+  | "right"
+  | "bottom"
+  | "left"
+  | "topRight"
+  | "bottomRight"
+  | "bottomLeft"
+  | "topLeft";
+
+type ResizeFunction = {
+  delta: {
+    width: number;
+    height: number;
+  };
+  direction: ResizeDirection;
+  size: Size;
+};
+
 type MiniPlayerPublicContextValue = {
   open: boolean;
   togglePictureInPicture: (ref: PictureInPictureElement) => void;
@@ -49,6 +76,8 @@ type MiniPlayerContextValue = {
 export interface MiniPlayerProviderProps extends PrimitiveDivProps {
   snapping?: boolean;
   offset?: number;
+  width?: number;
+  height?: number;
   clickThreshold?: number;
   initialPosition?: SnapPoints;
   initialTransform?: Position;
@@ -77,6 +106,8 @@ export const Provider = React.forwardRef<
     children,
     snapping = false,
     offset = 16,
+    width = 360,
+    height = 200,
     clickThreshold = 5,
     noDrag = false,
     initialPosition = "bottom-right",
@@ -97,6 +128,8 @@ export const Provider = React.forwardRef<
       snapping={snapping}
       offset={offset}
       clickThreshold={clickThreshold}
+      width={width}
+      height={height}
       initialPosition={initialPosition}
       initialTransform={initialTransform}
       noDrag={noDrag}
@@ -124,6 +157,8 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
   const {
     snapping,
     offset,
+    width,
+    height,
     clickThreshold,
     initialPosition,
     initialTransform,
@@ -139,6 +174,22 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
   const mouseStartRef = React.useRef<Position>({ x: 0, y: 0 });
 
   const [dragging, setDragging] = React.useState(false);
+  const [resizing, setResizing] = React.useState(false);
+  const [isHidden, setIsHidden] = React.useState(true);
+  const [hideEdge, setHideEdge] = useState<
+    "left" | "right" | "top" | "bottom" | null
+  >(null);
+  const [lastVisiblePosition, setLastVisiblePosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  const [dragStartSize, setDragStartSize] = useState<Size>();
+  const [size, setSize] = useState<Size>({
+    left: 0,
+    top: 0,
+    width: width ?? 360,
+    height: height ?? 200,
+  });
   const [startDragPosition, setStartDragPosition] = React.useState({
     x: 0,
     y: 0,
@@ -146,18 +197,56 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
   const [transform, setTransform] = React.useState<Position>(initialTransform);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (resizing) return;
     mouseStartRef.current = { x: e.clientX, y: e.clientY };
     setDragging(true);
     setStartDragPosition({ x: e.clientX, y: e.clientY });
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (resizing) return;
     if (noDrag) return;
     const touch = e.touches[0];
     mouseStartRef.current = { x: touch.clientX, y: touch.clientY };
     setDragging(true);
     setStartDragPosition({ x: touch.clientX, y: touch.clientY });
   };
+
+  const onResize = React.useCallback(
+    ({ delta, direction, size }: ResizeFunction) => {
+      if (!dragStartSize) {
+        return;
+      }
+      const directions = ["top", "left", "topLeft", "bottomLeft", "topRight"];
+
+      if (directions.indexOf(direction) !== -1) {
+        let newLeft = size.left;
+        let newTop = size.top;
+
+        if (direction === "bottomLeft") {
+          newLeft = dragStartSize.left - delta.width;
+        } else if (direction === "topRight") {
+          newTop = dragStartSize.top - delta.height;
+        } else {
+          newLeft = dragStartSize.left - delta.width;
+          newTop = dragStartSize.top - delta.height;
+        }
+
+        setSize({
+          ...size,
+          left: newLeft,
+          top: newTop,
+        });
+      }
+    },
+    [dragStartSize]
+  );
+
+  React.useEffect(() => {
+    if (!isHidden) {
+      setLastVisiblePosition({ left: size.left, top: size.top });
+    }
+  }, [isHidden, size.left, size.top]);
 
   React.useLayoutEffect(() => {
     const video = externalRef;
@@ -210,20 +299,20 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
 
   React.useLayoutEffect(() => {
     const updateInitialPosition = () => {
-      if (initialPosition && playerRef.current) {
-        const width = playerRef.current.offsetWidth;
-        const height = playerRef.current.offsetHeight;
-        const currentX = transform.x;
-        const currentY = transform.y;
-
-        const newTransform = findClosestSnapPoint(
-          currentX,
-          currentY,
-          width,
-          height,
+      if (initialPosition) {
+        const closest = findClosestSnapPoint(
+          size.left,
+          size.top,
+          size.width,
+          size.height,
           offset
         );
-        setTransform(newTransform);
+
+        setSize((prev) => ({
+          ...prev,
+          left: closest.left,
+          top: closest.top,
+        }));
       }
     };
 
@@ -234,10 +323,15 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
 
   React.useLayoutEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (resizing) return;
       if (!dragging) return;
       const dx = e.clientX - startDragPosition.x;
       const dy = e.clientY - startDragPosition.y;
-      setTransform((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      setSize((prev) => ({
+        ...prev,
+        left: prev.left + dx,
+        top: prev.top + dy,
+      }));
       setStartDragPosition({ x: e.clientX, y: e.clientY });
     };
 
@@ -246,11 +340,16 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
       const touch = e.touches[0];
       const dx = touch.clientX - startDragPosition.x;
       const dy = touch.clientY - startDragPosition.y;
-      setTransform((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      setSize((prev) => ({
+        ...prev,
+        left: prev.left + dx,
+        top: prev.top + dy,
+      }));
       setStartDragPosition({ x: touch.clientX, y: touch.clientY });
     };
 
     const handleEnd = (e?: MouseEvent | TouchEvent) => {
+      if (resizing) return;
       if (!dragging) return;
       setDragging(false);
 
@@ -277,17 +376,20 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
         });
       }
 
-      if (snapping && playerRef.current) {
-        const width = playerRef.current.offsetWidth;
-        const height = playerRef.current.offsetHeight;
+      if (snapping && !isHidden) {
         const closest = findClosestSnapPoint(
-          transform.x,
-          transform.y,
-          width,
-          height,
+          size.left,
+          size.top,
+          size.width,
+          size.height,
           offset
         );
-        setTransform(closest);
+
+        setSize((prev) => ({
+          ...prev,
+          left: closest.left,
+          top: closest.top,
+        }));
       }
     };
 
@@ -308,26 +410,166 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
     document.body.style.userSelect = dragging ? "none" : "";
   }, [dragging]);
 
+  React.useLayoutEffect(() => {
+    if (resizing || isHidden) return; // ← aqui está a mudança
+    if (snapping) {
+      const closest = findClosestSnapPoint(
+        size.left,
+        size.top,
+        size.width,
+        size.height,
+        offset
+      );
+      setSize((prev) => ({
+        ...prev,
+        left: closest.left,
+        top: closest.top,
+      }));
+      setDragging(false);
+    }
+  }, [resizing, isHidden]);
+
+  React.useEffect(() => {
+    if (resizing) return;
+
+    const thresholdX = size.width * 0.6;
+    const thresholdY = size.height * 0.6;
+
+    const rightEdge = size.left + size.width;
+    const bottomEdge = size.top + size.height;
+
+    let shouldHide = false;
+    let edge: "left" | "right" | "top" | "bottom" | null = null;
+
+    if (size.left < -thresholdX) {
+      shouldHide = true;
+      edge = "left";
+    } else if (rightEdge > window.innerWidth + thresholdX) {
+      shouldHide = true;
+      edge = "right";
+    } else if (size.top < -thresholdY) {
+      shouldHide = true;
+      edge = "top";
+    } else if (bottomEdge > window.innerHeight + thresholdY) {
+      shouldHide = true;
+      edge = "bottom";
+    }
+
+    if (shouldHide) {
+      setLastVisiblePosition({ left: size.left, top: size.top });
+      setIsHidden(true);
+      setHideEdge(edge);
+    } else {
+      setIsHidden(false);
+      setHideEdge(null);
+    }
+  }, [size, resizing]);
+
+  let adjustedLeft = size.left;
+  let adjustedTop = size.top;
+
+  if (isHidden && hideEdge) {
+    if (hideEdge === "left") {
+      adjustedLeft = -size.width + 24; // esconde quase tudo, deixa uma aba
+    }
+    if (hideEdge === "right") {
+      adjustedLeft = window.innerWidth - 24; // gruda na borda direita
+    }
+    if (hideEdge === "top") {
+      adjustedTop = -size.height + 24;
+    }
+    if (hideEdge === "bottom") {
+      adjustedTop = window.innerHeight - 24;
+    }
+  }
+
   return (
     <div className="inset-0 fixed pointer-events-none z-50">
-      <div
-        {...pictureInPictureProps}
-        ref={playerRef}
+      <Resizable
+        as="div"
+        minHeight={100}
+        bounds={"parent"}
+        boundsByDirection
+        resizeRatio={2}
+        lockAspectRatio
         data-state={open ? "open" : "closed"}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        className="absolute w-90 h-50 bg-neutral-900 rounded-2xl duration-300 overflow-clip"
+        onResizeStart={() => {
+          setResizing(true);
+          setDragStartSize(size);
+        }}
+        onResize={(event, direction, elementRef, delta) => {
+          onResize({ delta, direction, size });
+        }}
+        onResizeStop={(e, direction, ref, delta) => {
+          setResizing(false);
+          setDragStartSize(undefined);
+
+          if (snapping) {
+            const rect = ref.getBoundingClientRect(); // pega tamanho real após resize
+            const closest = findClosestSnapPoint(
+              rect.left,
+              rect.top,
+              rect.width,
+              rect.height,
+              offset
+            );
+
+            setSize((prev) => ({
+              ...prev,
+              left: closest.left,
+              top: closest.top,
+              width: rect.width,
+              height: rect.height,
+            }));
+          }
+        }}
+        defaultSize={size}
         style={{
-          transform: `translate(${transform.x}px, ${transform.y}px) scale(${
-            open ? 1 : 0.75
-          })`,
+          position: "absolute",
           transition: dragging
             ? "none"
-            : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+            : "left 0.5s cubic-bezier(0.22, 1, 0.36, 1), top 0.5s cubic-bezier(0.22, 1, 0.36, 1), scale 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+          scale: open ? 1 : 0.75,
           pointerEvents: "all",
           opacity: open ? 1 : 0,
+          left: `${adjustedLeft}px`,
+          top: `${adjustedTop}px`,
+          width: `${size.width}px`,
+          height: `${size.height}px`,
         }}
-      />
+        {...pictureInPictureProps}
+      >
+        <div ref={playerRef} className="absolute inset-0" />
+        {/* Show PiP Again */}
+        {isHidden && (
+          <button
+            onClick={() => {
+              if (lastVisiblePosition) {
+                setSize((prev) => ({
+                  ...prev,
+                  left: lastVisiblePosition.left,
+                  top: lastVisiblePosition.top,
+                }));
+                setIsHidden(false);
+                setHideEdge(null);
+              }
+            }}
+            className={`absolute ${
+              hideEdge === "left"
+                ? "right-0 top-1/2 -translate-y-1/2"
+                : hideEdge === "right"
+                ? "left-0 top-1/2 -translate-y-1/2"
+                : hideEdge === "top"
+                ? "left-1/2 bottom-0 -translate-x-1/2"
+                : "left-1/2 top-0 -translate-x-1/2"
+            } h-6 w-6 bg-neutral-900/90 text-white rounded-full flex items-center justify-center z-50`}
+          >
+            ⬅
+          </button>
+        )}
+      </Resizable>
     </div>
   );
 };
