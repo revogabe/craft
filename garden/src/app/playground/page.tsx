@@ -13,21 +13,21 @@ type Video = {
 const videos: Video[] = [
   {
     id: "warriors-1",
-    src: "gta.mp4",
+    src: "nba.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",
   },
   {
     id: "warriors-2",
-    src: "gta.mp4",
+    src: "nba.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",
   },
   {
     id: "warriors-3",
-    src: "gta.mp4",
+    src: "nba.mp4",
     title: "Golden State Warriors vs. Timberwolves",
     description:
       "Game Highlights between the Golden State Warriors and the Minnesota Timberwolves in last night's game.",

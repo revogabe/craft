@@ -17,13 +17,13 @@ export default function PlaygroundPage() {
     <div className="flex flex-col items-center justify-center min-h-screen container border-x border-neutral-800 border-dashed mx-auto">
       <div className="w-full min-h-screen flex flex-col lg:flex-row gap-8 p-10">
         <Link
-          href={`/demo/${randomName()}`}
+          href={`/demo/video`}
           className="h-100 w-100 bg-neutral-950 hover:bg-neutral-900 duration-200 ease-out border border-neutral-900 rounded-3xl flex flex-col justify-between items-start p-4 gap-4"
         >
           <div className="w-full h-[200px] rounded-2xl bg-neutral-900 overflow-hidden relative">
             <video
               ref={videoRef}
-              src={`/videos/gta.mp4`}
+              src={`/videos/nba.mp4`}
               className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl"
               controls
             />

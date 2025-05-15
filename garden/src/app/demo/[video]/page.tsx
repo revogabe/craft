@@ -16,7 +16,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
           <div className="w-full h-[200px] rounded-2xl bg-neutral-900 overflow-hidden relative">
             <video
               ref={videoRef}
-              src={`/videos/gta.mp4`}
+              src={`/videos/nba.mp4`}
               className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl"
               controls
             />

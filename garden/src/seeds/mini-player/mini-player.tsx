@@ -28,28 +28,31 @@ type Position = {
   y: number;
 };
 
-type MiniPlayerContextValue = {
+type MiniPlayerPublicContextValue = {
   open: boolean;
+  togglePictureInPicture: (ref: PictureInPictureElement) => void;
+};
+
+type MiniPlayerContextValue = {
   snapping: boolean;
   offset: number;
   clickThreshold: number;
   initialPosition: SnapPoints;
   initialTransform: Position;
+  width?: number;
+  height?: number;
   noDrag: boolean;
-  externalRef?: HTMLVideoElement | HTMLIFrameElement | null;
-  togglePictureInPicture: (ref: PictureInPictureElement) => void;
+  externalRef?: PictureInPictureElement;
   onReturn?: () => void;
 };
 
 export interface MiniPlayerProviderProps extends PrimitiveDivProps {
-  open?: boolean;
   snapping?: boolean;
   offset?: number;
   clickThreshold?: number;
   initialPosition?: SnapPoints;
   initialTransform?: Position;
   noDrag?: boolean;
-  externalRef?: HTMLVideoElement | HTMLIFrameElement | null;
   onReturn?: () => void;
 }
 
@@ -57,10 +60,14 @@ export interface MiniPlayerProviderProps extends PrimitiveDivProps {
  * Component Form:Field
  * --------------------------------------------------------------------------*/
 
-const PROVIDER_NAME = "MiniPlayerProvider";
+const PROVIDER_PRIVATE_NAME = "MiniPlayerPrivateProvider";
+const PROVIDER_PUBLIC_NAME = "MiniPlayerPublicProvider";
 
-const [MiniPlayerProvider, useMiniPlayerContext] =
-  createContext<MiniPlayerContextValue>(PROVIDER_NAME);
+const [PrivateProvider, useMiniPlayerPrivate] =
+  createContext<MiniPlayerContextValue>(PROVIDER_PRIVATE_NAME);
+
+const [PublicProvider, useMiniPlayerPublic] =
+  createContext<MiniPlayerPublicContextValue>(PROVIDER_PUBLIC_NAME);
 
 export const Provider = React.forwardRef<
   PrimitiveDivElement,
@@ -68,14 +75,12 @@ export const Provider = React.forwardRef<
 >((props, ref) => {
   const {
     children,
-    open = false,
     snapping = false,
     offset = 16,
     clickThreshold = 5,
     noDrag = false,
     initialPosition = "bottom-right",
     initialTransform = { x: 0, y: 0 },
-    externalRef,
     onReturn,
     ...providerProps
   } = props;
@@ -88,8 +93,7 @@ export const Provider = React.forwardRef<
   };
 
   return (
-    <MiniPlayerProvider
-      open={!!activeRef}
+    <PrivateProvider
       snapping={snapping}
       offset={offset}
       clickThreshold={clickThreshold}
@@ -97,17 +101,20 @@ export const Provider = React.forwardRef<
       initialTransform={initialTransform}
       noDrag={noDrag}
       externalRef={activeRef}
-      togglePictureInPicture={handleTogglePictureInPicture}
-      onReturn={onReturn}
     >
-      <div ref={ref} {...providerProps}>
-        {children}
-      </div>
-    </MiniPlayerProvider>
+      <PublicProvider
+        open={!!activeRef}
+        togglePictureInPicture={handleTogglePictureInPicture}
+      >
+        <div ref={ref} {...providerProps}>
+          {children}
+        </div>
+      </PublicProvider>
+    </PrivateProvider>
   );
 });
 
-Provider.displayName = PROVIDER_NAME;
+Provider.displayName = PROVIDER_PRIVATE_NAME;
 
 const PICTURE_NAME = "PictureInPicture";
 
@@ -115,7 +122,6 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
   const { ...pictureInPictureProps } = props;
 
   const {
-    open,
     snapping,
     offset,
     clickThreshold,
@@ -124,7 +130,9 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
     noDrag,
     externalRef,
     onReturn,
-  } = useMiniPlayerContext(PICTURE_NAME);
+  } = useMiniPlayerPrivate(PICTURE_NAME);
+
+  const { open } = useMiniPlayerPublic(PICTURE_NAME);
 
   const playerRef = React.useRef<HTMLDivElement>(null);
   const originalParentRef = React.useRef<HTMLElement | null>(null);
@@ -330,7 +338,7 @@ PictureInPicture.displayName = PICTURE_NAME;
  * Exports
  * --------------------------------------------------------------------------*/
 
-export const useMiniPlayer = () => useMiniPlayerContext("useMiniPlayer");
+export const useMiniPlayer = () => useMiniPlayerPublic("useMiniPlayer");
 
 export {
   Provider as MiniPlayerProvider,
