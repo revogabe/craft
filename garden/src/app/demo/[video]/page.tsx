@@ -27,17 +27,27 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             {video}
           </Link>
         </div>
-        <iframe
-          ref={videoRef}
-          width="100%"
-          height="611"
-          src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
-          title="YouTube video player"
-          allow="accelerometer; autoplay; encrypted-media; web-share"
-          referrerPolicy="strict-origin-when-cross-origin"
-          className="rounded-xl"
-          allowFullScreen
-        />
+        <div className="w-full h-[611px] bg-slate-200 rounded-xl overflow-clip">
+          <iframe
+            ref={videoRef}
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
+            title="YouTube video player"
+            allow="accelerometer; autoplay; encrypted-media; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="rounded-xl"
+            allowFullScreen
+          />
+          {/* <video
+            ref={videoRef}
+            width="100%"
+            height="100%"
+            src="/videos/nba.mp4"
+            className="rounded-lg"
+            controls
+          /> */}
+        </div>
         <div className="flex flex-col gap-2 p-1">
           <div className="flex items-start justify-between gap-4">
             <h1 className="leading-tight select-none text-xl font-semibold line-clamp-1">
@@ -45,6 +55,12 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             </h1>
             <div className="flex items-center justify-end gap-3">
               <span className="text-lg text-slate-800">1.2M views</span>
+              <button
+                onClick={() => togglePictureInPicture(videoRef.current)}
+                className="border rounded-full border-slate-300 px-4 h-8 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 duration-200 ease-out"
+              >
+                Picture in Picture
+              </button>
             </div>
           </div>
           <p className="line-clamp-2 select-none text-slate-600">
