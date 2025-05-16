@@ -1,14 +1,30 @@
 "use client";
 
-import { use, useRef } from "react";
+import { use, useMemo, useRef } from "react";
 import type { NextPage } from "@/types/next";
-import { useMiniPlayer } from "@/seeds/mini-player/mini-player";
 import Link from "next/link";
+import { DemoPortal, useDemo } from "@/seeds/mini-player/demo";
 
 export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
   const { video } = use(params);
   const videoRef = useRef<HTMLIFrameElement | null>(null);
-  const { open, togglePictureInPicture } = useMiniPlayer();
+  const { enablePiP, disablePiP } = useDemo();
+
+  const videoPlayer = useMemo(() => {
+    return (
+      <iframe
+        ref={videoRef}
+        width="100%"
+        height="100%"
+        src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
+        title="YouTube video player"
+        allow="accelerometer; autoplay; encrypted-media; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        className="rounded-xl"
+        allowFullScreen
+      />
+    );
+  }, []);
 
   return (
     <div className="flex items-start justify-between min-h-screen container border-x border-slate-300 border-dashed mx-auto p-4 gap-4">
@@ -17,7 +33,9 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
         <div className="flex items-center justify-start gap-2">
           <Link
             href={"/demo"}
-            onClick={() => togglePictureInPicture(videoRef.current)}
+            onClick={() => {
+              enablePiP("player-video");
+            }}
             className="text-slate-500 hover:text-slate-800 duration-200 ease-out"
           >
             Home
@@ -28,17 +46,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
           </Link>
         </div>
         <div className="w-full h-[611px] bg-slate-200 rounded-xl overflow-clip">
-          <iframe
-            ref={videoRef}
-            width="100%"
-            height="100%"
-            src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
-            title="YouTube video player"
-            allow="accelerometer; autoplay; encrypted-media; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            className="rounded-xl"
-            allowFullScreen
-          />
+          <DemoPortal id="player-video">{videoPlayer}</DemoPortal>
           {/* <video
             ref={videoRef}
             width="100%"
@@ -56,10 +64,16 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             <div className="flex items-center justify-end gap-3">
               <span className="text-lg text-slate-800">1.2M views</span>
               <button
-                onClick={() => togglePictureInPicture(videoRef.current)}
+                onClick={() => enablePiP("player-video")}
                 className="border rounded-full border-slate-300 px-4 h-8 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 duration-200 ease-out"
               >
-                Picture in Picture
+                Enable PiP
+              </button>
+              <button
+                onClick={() => disablePiP()}
+                className="border rounded-full border-slate-300 px-4 h-8 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 duration-200 ease-out"
+              >
+                Disable PiP
               </button>
             </div>
           </div>

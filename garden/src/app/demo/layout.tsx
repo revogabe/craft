@@ -1,8 +1,5 @@
 import { HeaderSearch } from "@/components/header-search";
-import {
-  MiniPlayerPictureInPicture,
-  MiniPlayerProvider,
-} from "@/seeds/mini-player/mini-player";
+import { DemoProvider } from "@/seeds/mini-player/demo";
 import type { NextLayout } from "@/types/next";
 import type { Metadata } from "next";
 
@@ -13,12 +10,11 @@ export const metadata: Metadata = {
 
 export default function DemoLayout({ children }: NextLayout) {
   return (
-    <MiniPlayerProvider snapping>
+    <DemoProvider>
       <main className="min-h-screen w-full mx-auto bg-slate-100 text-slate-950">
-        <MiniPlayerPictureInPicture />
         <HeaderSearch />
         {children}
       </main>
-    </MiniPlayerProvider>
+    </DemoProvider>
   );
 }
