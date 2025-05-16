@@ -1,52 +1,97 @@
 "use client";
 
-import { useMiniPlayer } from "@/seeds/mini-player/mini-player";
-import type { NextPage } from "@/types/next";
-import dynamic from "next/dynamic";
 import { use, useRef } from "react";
-
-const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
-  ssr: false,
-});
+import type { NextPage } from "@/types/next";
+import { useMiniPlayer } from "@/seeds/mini-player/mini-player";
+import Link from "next/link";
 
 export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
   const { video } = use(params);
-  const videoRef = useRef<any | null>(null);
+  const videoRef = useRef<HTMLIFrameElement | null>(null);
   const { open, togglePictureInPicture } = useMiniPlayer();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen container border-x border-neutral-800 border-dashed mx-auto">
-      <div className="w-full min-h-screen flex flex-col lg:flex-row gap-8 p-10">
-        <div className="h-100 w-100 bg-neutral-950 border border-neutral-900 rounded-3xl flex flex-col justify-between items-start p-4 gap-4">
-          <div className="w-full h-[200px] rounded-2xl bg-neutral-900 overflow-hidden relative">
-            <MuxPlayer
-              ref={videoRef}
-              // className="absolute top-0 left-0 w-full h-full object-cover"
-              playbackId="a4nOgmxGWg6gULfcBbAa00gXyfcwPnAFldF8RdsNyk8M"
-              autoPlay
-              metadata={{
-                video_id: "video-id-54321",
-                video_title: "Test video title",
-                viewer_user_id: "user-id-007",
-              }}
+    <div className="flex items-start justify-between min-h-screen container border-x border-slate-300 border-dashed mx-auto p-4 gap-4">
+      {/* Video Player + Comments*/}
+      <div className="w-full flex-1 flex flex-col gap-4">
+        <div className="flex items-center justify-start gap-2">
+          <Link
+            href={"/demo"}
+            onClick={() => togglePictureInPicture(videoRef.current)}
+            className="text-slate-500 hover:text-slate-800 duration-200 ease-out"
+          >
+            Home
+          </Link>
+          <span className="text-slate-500">/</span>
+          <Link href={"/demo"} className="text-slate-800">
+            {video}
+          </Link>
+        </div>
+        <iframe
+          ref={videoRef}
+          width="100%"
+          height="611"
+          src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
+          title="YouTube video player"
+          allow="accelerometer; autoplay; encrypted-media; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="rounded-xl"
+          allowFullScreen
+        />
+        <div className="flex flex-col gap-2 p-1">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="leading-tight select-none text-xl font-semibold line-clamp-1">
+              Grand Theft Auto V - The Last of Us Part II - 4K 60FPS
+            </h1>
+            <div className="flex items-center justify-end gap-3">
+              <span className="text-lg text-slate-800">1.2M views</span>
+            </div>
+          </div>
+          <p className="line-clamp-2 select-none text-slate-600">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere nemo
+            quo error asperiores corporis tempore praesentium dolorum excepturi
+            incidunt natus nobis, iure aliquam accusamus adipisci consequuntur?
+            Molestias dicta voluptas architecto!
+          </p>
+        </div>
+        <div className="flex flex-col gap-6 p-1">
+          <h1 className="text-xl font-semibold">10 Comments</h1>
+          <div className="flex items-start justify-start gap-4 w-full">
+            <img
+              src="https://avatars.githubusercontent.com/u/56942108?v=4"
+              alt="Profile"
+              className="h-10 w-10 rounded-full border border-slate-400 hover:opacity-80 duration-300 ease-out"
+            />
+            <input
+              type="text"
+              placeholder="Add a comment..."
+              className="border-b border-slate-300 h-10 px-2 w-full outline-none duration-200 ease-out"
             />
           </div>
-
-          <div className="flex flex-col gap-2 p-1">
-            <h1 className="text-xl font-medium text-neutral-200">{video}</h1>
-            <p className="text-sm text-neutral-500">
-              Trailer for the upcoming Grand Theft Auto VI game, showcasing new
-              features and gameplay mechanics.
-            </p>
-          </div>
-          <button
-            className="self-start h-8 text-sm px-4 rounded-xl border border-neutral-800 bg-neutral-900 text-neutral-400 hover:bg-neutral-800 transition-colors duration-200"
-            onClick={() => togglePictureInPicture(videoRef.current)}
-          >
-            {open ? "Hide Mini Player" : "Show Mini Player"}
-          </button>
+          {/* Comments */}
+          {Array.from({ length: 10 }, (_, i) => (
+            <div
+              key={i}
+              className="flex items-start justify-start gap-4 max-w-4/5"
+            >
+              <img
+                src="https://avatars.githubusercontent.com/u/56942108?v=4"
+                alt="Profile"
+                className="h-10 w-10 rounded-full border border-slate-400 hover:opacity-80 duration-300 ease-out"
+              />
+              <div className="flex flex-col items-start justify-start gap-1">
+                <span className="text-sm font-semibold">@revogabe</span>
+                <p className="text-sm">
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                  Facere nemo quo error asperiores corporis.
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+      {/* Recommends */}
+      <aside className="w-100"></aside>
     </div>
   );
 }
