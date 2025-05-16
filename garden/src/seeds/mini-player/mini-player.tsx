@@ -532,7 +532,7 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
             ? "none"
             : "left 0.5s cubic-bezier(0.22, 1, 0.36, 1), top 0.5s cubic-bezier(0.22, 1, 0.36, 1), scale 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
           scale: open ? 1 : 0.75,
-          pointerEvents: "all",
+          pointerEvents: open ? "auto" : "none",
           opacity: open ? 1 : 0,
           left: `${adjustedLeft}px`,
           top: `${adjustedTop}px`,

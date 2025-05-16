@@ -1,3 +1,4 @@
+import { HeaderSearch } from "@/components/header-search";
 import {
   MiniPlayerPictureInPicture,
   MiniPlayerProvider,
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
 export default function DemoLayout({ children }: NextLayout) {
   return (
     <MiniPlayerProvider snapping>
-      <main className="min-h-screen w-full mx-auto">
+      <main className="min-h-screen w-full mx-auto bg-slate-100 text-slate-950">
         <MiniPlayerPictureInPicture />
+        <HeaderSearch />
         {children}
       </main>
     </MiniPlayerProvider>
