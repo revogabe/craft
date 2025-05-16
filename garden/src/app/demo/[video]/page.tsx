@@ -1,30 +1,13 @@
 "use client";
 
-import { use, useMemo, useRef } from "react";
+import { use } from "react";
 import type { NextPage } from "@/types/next";
 import Link from "next/link";
 import { DemoPortal, useDemo } from "@/seeds/mini-player/demo";
 
 export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
   const { video } = use(params);
-  const videoRef = useRef<HTMLIFrameElement | null>(null);
   const { enablePiP, disablePiP } = useDemo();
-
-  const videoPlayer = useMemo(() => {
-    return (
-      <iframe
-        ref={videoRef}
-        width="100%"
-        height="100%"
-        src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
-        title="YouTube video player"
-        allow="accelerometer; autoplay; encrypted-media; web-share"
-        referrerPolicy="strict-origin-when-cross-origin"
-        className="rounded-xl"
-        allowFullScreen
-      />
-    );
-  }, []);
 
   return (
     <div className="flex items-start justify-between min-h-screen container border-x border-slate-300 border-dashed mx-auto p-4 gap-4">
@@ -33,9 +16,6 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
         <div className="flex items-center justify-start gap-2">
           <Link
             href={"/demo"}
-            onClick={() => {
-              enablePiP("player-video");
-            }}
             className="text-slate-500 hover:text-slate-800 duration-200 ease-out"
           >
             Home
@@ -46,15 +26,25 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
           </Link>
         </div>
         <div className="w-full h-[611px] bg-slate-200 rounded-xl overflow-clip">
-          <DemoPortal id="player-video">{videoPlayer}</DemoPortal>
-          {/* <video
-            ref={videoRef}
-            width="100%"
-            height="100%"
-            src="/videos/nba.mp4"
-            className="rounded-lg"
-            controls
-          /> */}
+          <DemoPortal id={video}>
+            {/* <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
+              title="YouTube video player"
+              allow="accelerometer; autoplay; encrypted-media; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="rounded-xl"
+              allowFullScreen
+            /> */}
+            <video
+              width="100%"
+              height="100%"
+              src="/videos/nba.mp4"
+              className="rounded-lg"
+              controls
+            />
+          </DemoPortal>
         </div>
         <div className="flex flex-col gap-2 p-1">
           <div className="flex items-start justify-between gap-4">
@@ -64,7 +54,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             <div className="flex items-center justify-end gap-3">
               <span className="text-lg text-slate-800">1.2M views</span>
               <button
-                onClick={() => enablePiP("player-video")}
+                onClick={() => enablePiP(video)}
                 className="border rounded-full border-slate-300 px-4 h-8 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 duration-200 ease-out"
               >
                 Enable PiP

@@ -76,6 +76,8 @@ const DemoPicture = ({
   return ReactDOM.createPortal(
     <div
       style={{
+        maxWidth: "360px",
+        maxHeight: "300px",
         position: "fixed",
         background: "red",
         bottom: 0,
@@ -98,7 +100,6 @@ export const useDemo = () => {
   };
 };
 
-// src/context/DemoContext.tsx  (continua exportando activeId no contexto)
 export const DemoPortal = ({
   id,
   children,
@@ -107,17 +108,12 @@ export const DemoPortal = ({
   children: React.ReactNode;
 }) => {
   const ctx = useContext(DemoContext)!;
-  const { register, unregister, activeId } = ctx;
+  const { register, activeId } = ctx;
 
   useEffect(() => {
-    ctx.register(id, children);
-    return () => {
-      ctx.unregister(id);
-    };
-  }, [id, register, unregister]);
+    register(id, children);
+  }, [id, register]);
 
-  if (activeId === id) {
-    return null;
-  }
+  if (activeId === id) return null;
   return <>{children}</>;
 };
