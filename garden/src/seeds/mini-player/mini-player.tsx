@@ -470,16 +470,16 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
 
   if (isHidden && hideEdge) {
     if (hideEdge === "left") {
-      adjustedLeft = -size.width + 24; // esconde quase tudo, deixa uma aba
+      adjustedLeft = -size.width + 0;
     }
     if (hideEdge === "right") {
-      adjustedLeft = window.innerWidth - 24; // gruda na borda direita
+      adjustedLeft = window.innerWidth - 14;
     }
     if (hideEdge === "top") {
-      adjustedTop = -size.height + 24;
+      adjustedTop = -size.height + 0;
     }
     if (hideEdge === "bottom") {
-      adjustedTop = window.innerHeight - 24;
+      adjustedTop = window.innerHeight - 0;
     }
   }
 
@@ -542,6 +542,7 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
         {...pictureInPictureProps}
       >
         <div ref={playerRef} className="absolute inset-0" />
+        <div className="absolute inset-0" />
         {/* Show PiP Again */}
         {isHidden && (
           <button
@@ -558,15 +559,15 @@ export const PictureInPicture = (props: PrimitiveDivProps) => {
             }}
             className={`absolute ${
               hideEdge === "left"
-                ? "right-0 top-1/2 -translate-y-1/2"
+                ? "right-0 top-1/2 -translate-y-1/2 translate-x-full rounded-r-xl h-full w-6"
                 : hideEdge === "right"
-                ? "left-0 top-1/2 -translate-y-1/2"
+                ? "left-0 top-1/2 -translate-y-1/2 -translate-x-full rounded-l-xl h-full w-6"
                 : hideEdge === "top"
-                ? "left-1/2 bottom-0 -translate-x-1/2"
-                : "left-1/2 top-0 -translate-x-1/2"
-            } h-6 w-6 bg-neutral-900/90 text-white rounded-full flex items-center justify-center z-50`}
+                ? "left-1/2 bottom-0 -translate-x-1/2 translate-y-full rounded-b-xl h-6 w-full"
+                : "left-1/2 top-0 -translate-x-1/2 -translate-y-full rounded-t-xl h-6 w-full"
+            } bg-slate-200 text-slate-500 border border-slate-300 flex items-center justify-center -z-10`}
           >
-            ⬅
+            X
           </button>
         )}
       </Resizable>
