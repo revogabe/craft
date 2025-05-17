@@ -24,7 +24,7 @@ export function HeaderSearch() {
   };
 
   return (
-    <div className="sticky top-0 bg-slate-100/90 backdrop-blur-xl container mx-auto w-full border-b border-x border-dashed border-slate-300 flex flex-col gap-4">
+    <div className="sticky top-0 z-50 bg-slate-100/85 backdrop-blur-xl container mx-auto w-full border-b border-x border-dashed border-slate-300 flex flex-col gap-4">
       <header>
         <div className="h-full w-full flex items-center justify-between px-3 pt-3 gap-4">
           <input

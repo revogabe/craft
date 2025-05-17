@@ -25,7 +25,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             {video}
           </Link>
         </div>
-        <div className="w-full h-[611px] bg-slate-200 rounded-xl overflow-clip">
+        <div className="w-full h-[524px] bg-slate-200 rounded-xl overflow-clip">
           <DemoPortal id={video}>
             {/* <iframe
               width="100%"
@@ -37,13 +37,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
               className="rounded-xl"
               allowFullScreen
             /> */}
-            <video
-              width="100%"
-              height="100%"
-              src="/videos/nba.mp4"
-              className="rounded-lg"
-              controls
-            />
+            <video src="/videos/nba.mp4" controls />
           </DemoPortal>
         </div>
         <div className="flex flex-col gap-2 p-1">
