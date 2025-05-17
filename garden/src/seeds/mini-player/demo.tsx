@@ -1,7 +1,14 @@
 "use client";
-import { Resizable } from "re-resizable";
+import { Resizable, type ResizableProps } from "re-resizable";
 import React from "react";
 import ReactDOM from "react-dom";
+
+type ResizableElement = React.ComponentRef<typeof Resizable>;
+
+type Position = {
+  x: number;
+  y: number;
+};
 
 type DemoContextType = {
   register: (id: string, node: React.ReactNode) => void;
@@ -11,28 +18,19 @@ type DemoContextType = {
   activeId: string | null;
 };
 
-type DemoPictureProps = {
-  className?: string;
-  snapping?: boolean;
-  noDrag?: boolean;
-  noResize?: boolean;
-  gutter?: number;
-  threshold?: number;
-  width?: number | string;
-  height?: number | string;
-  minWidth?: number | string;
-  minHeight?: number | string;
-  maxWidth?: number | string;
-  maxHeight?: number | string;
-  onReturn?: () => void;
-};
-
-type ResizableProps = React.ComponentProps<typeof Resizable>;
-
 type DemoPicturePrivateProps = {
   portals: Record<string, React.ReactNode>;
   activeId: string | null;
 };
+
+interface DemoPictureProps extends ResizableProps {
+  snapping?: boolean;
+  gutter?: number;
+  threshold?: number;
+  noDrag?: boolean;
+  noResize?: boolean;
+  onReturn?: () => void;
+}
 
 type DemoProviderProps = {
   children: React.ReactNode;
@@ -85,32 +83,41 @@ export const DemoProvider = ({
   );
 };
 
-const DemoPicture = (props: DemoPicturePrivateProps & DemoPictureProps) => {
+const DemoPicture = React.forwardRef<
+  ResizableElement,
+  DemoPictureProps & DemoPicturePrivateProps
+>((props, ref) => {
   const {
-    portals,
     activeId,
+    portals,
     gutter = 24,
-    width,
-    height,
-    minWidth = 200,
-    maxWidth = 1400,
     noResize,
+    defaultSize = {
+      width: 400,
+      height: 192,
+    },
+    minWidth = 300,
+    maxWidth = 1720,
     ...pictureProps
   } = props;
 
   if (!activeId || !portals[activeId]) return null;
 
-  const mouseStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const mouseStartRef = React.useRef<Position>({
+    x: 0,
+    y: 0,
+  });
 
   const [dragging, setDragging] = React.useState(false);
   const [resizing, setResizing] = React.useState(false);
-  const [transform, setTransform] = React.useState<{ x: number; y: number }>({
+  const [transform, setTransform] = React.useState<Position>({
     x: 0,
     y: 0,
   });
 
   return ReactDOM.createPortal(
     <Resizable
+      ref={ref}
       enable={{
         bottom: !noResize,
         bottomLeft: !noResize,
@@ -121,10 +128,7 @@ const DemoPicture = (props: DemoPicturePrivateProps & DemoPictureProps) => {
         topLeft: !noResize,
         topRight: !noResize,
       }}
-      defaultSize={{
-        width: width || 400,
-        height: height || 194,
-      }}
+      defaultSize={defaultSize}
       minWidth={minWidth}
       maxWidth={maxWidth}
       bounds="parent"
@@ -136,17 +140,23 @@ const DemoPicture = (props: DemoPicturePrivateProps & DemoPictureProps) => {
         pointerEvents: "all",
         position: "fixed",
         background: "red",
-        bottom: 0,
-        right: 0,
         margin: gutter,
         zIndex: 9999,
+        transition: dragging
+          ? "none"
+          : "left 0.5s cubic-bezier(0.22, 1, 0.36, 1), top 0.5s cubic-bezier(0.22, 1, 0.36, 1), scale 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+        left: `${transform.x}px`,
+        top: `${transform.y}px`,
       }}
+      {...pictureProps}
     >
-      <div className="absolute inset-0">{portals[activeId]}</div>
+      <div className="absolute inset-0 pointer-events-none">
+        {portals[activeId]}
+      </div>
     </Resizable>,
     document.body
   );
-};
+});
 
 export const useDemo = () => {
   const ctx = React.useContext(DemoContext);
