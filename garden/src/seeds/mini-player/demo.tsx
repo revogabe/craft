@@ -2,6 +2,7 @@
 import { Resizable, type ResizableProps } from "re-resizable";
 import React from "react";
 import ReactDOM from "react-dom";
+import { findClosestSnapPoint } from "./utils/findClosestSnapPoint";
 
 type ResizableElement = React.ComponentRef<typeof Resizable>;
 
@@ -90,6 +91,8 @@ const DemoPicture = React.forwardRef<
   const {
     activeId,
     portals,
+    className,
+    snapping = true,
     gutter = 24,
     noResize,
     defaultSize = {
@@ -103,6 +106,7 @@ const DemoPicture = React.forwardRef<
 
   if (!activeId || !portals[activeId]) return null;
 
+  const pictureRef = React.useRef<HTMLDivElement | null>(null);
   const mouseStartRef = React.useRef<Position>({
     x: 0,
     y: 0,
@@ -114,6 +118,30 @@ const DemoPicture = React.forwardRef<
     x: 0,
     y: 0,
   });
+
+  React.useLayoutEffect(() => {
+    if (pictureRef.current) {
+      const rect = pictureRef.current.getBoundingClientRect();
+      if (snapping) {
+        const snap = findClosestSnapPoint(
+          rect.left,
+          rect.top,
+          rect.width,
+          rect.height,
+          gutter
+        );
+        setTransform({
+          x: snap.left,
+          y: snap.top,
+        });
+        return;
+      }
+      setTransform({
+        x: rect.left,
+        y: rect.top,
+      });
+    }
+  }, []);
 
   return ReactDOM.createPortal(
     <Resizable
@@ -134,13 +162,13 @@ const DemoPicture = React.forwardRef<
       bounds="parent"
       boundsByDirection
       resizeRatio={2}
+      onResizeStart={() => setResizing(true)}
+      onResizeStop={() => setResizing(false)}
       lockAspectRatio
       style={{
-        overflow: "clip",
         pointerEvents: "all",
         position: "fixed",
         background: "red",
-        margin: gutter,
         zIndex: 9999,
         transition: dragging
           ? "none"
@@ -150,9 +178,58 @@ const DemoPicture = React.forwardRef<
       }}
       {...pictureProps}
     >
-      <div className="absolute inset-0 pointer-events-none">
+      <div
+        ref={pictureRef}
+        className={`absolute inset-0 pointer-events-none overflow-clip ${className}`}
+      >
         {portals[activeId]}
       </div>
+      <div
+        onMouseDown={(e) => {
+          if (resizing) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          mouseStartRef.current = {
+            x: e.clientX - transform.x,
+            y: e.clientY - transform.y,
+          };
+
+          const handleMouseMove = (moveEvent: MouseEvent) => {
+            setDragging(true);
+            setTransform({
+              x: moveEvent.clientX - mouseStartRef.current.x,
+              y: moveEvent.clientY - mouseStartRef.current.y,
+            });
+          };
+
+          const handleMouseUp = () => {
+            setDragging(false);
+
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+
+            if (snapping && pictureRef.current) {
+              const rect = pictureRef.current.getBoundingClientRect();
+              const snap = findClosestSnapPoint(
+                rect.left,
+                rect.top,
+                rect.width,
+                rect.height,
+                gutter
+              );
+              setTransform({
+                x: snap.left,
+                y: snap.top,
+              });
+            }
+          };
+
+          document.addEventListener("mousemove", handleMouseMove);
+          document.addEventListener("mouseup", handleMouseUp);
+        }}
+        className="absolute inset-0 bg-red-500/50 z-50"
+      />
     </Resizable>,
     document.body
   );
