@@ -126,6 +126,8 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
   ): SnapResult {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
 
     const snapPoints: SnapResult[] = [
       {
@@ -152,7 +154,7 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
         top: gutter,
         right: gutter,
         bottom: null,
-        leftForAnim: screenWidth - width - gutter,
+        leftForAnim: screenWidth - width - gutter - scrollbarWidth,
         topForAnim: gutter,
       },
       {
@@ -170,7 +172,7 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
         top: (screenHeight - height) / 2,
         right: gutter,
         bottom: null,
-        leftForAnim: screenWidth - width - gutter,
+        leftForAnim: screenWidth - width - gutter - scrollbarWidth,
         topForAnim: (screenHeight - height) / 2,
       },
       {
@@ -197,7 +199,7 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
         top: null,
         right: gutter,
         bottom: gutter,
-        leftForAnim: screenWidth - width - gutter,
+        leftForAnim: screenWidth - width - gutter - scrollbarWidth,
         topForAnim: screenHeight - height - gutter,
       },
     ];
