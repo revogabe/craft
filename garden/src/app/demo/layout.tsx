@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function DemoLayout({ children }: NextLayout) {
   return (
-    <DemoProvider className="rounded-xl">
+    <DemoProvider>
       <main className="min-h-screen w-full mx-auto bg-slate-100 text-slate-950">
         <HeaderSearch />
         {children}

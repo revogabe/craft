@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import React, { use } from "react";
 import type { NextPage } from "@/types/next";
 import Link from "next/link";
 import { DemoPortal, useDemo } from "@/seeds/mini-player/demo";
@@ -26,8 +26,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
           </Link>
         </div>
         <div className="w-full h-[524px] bg-slate-200 rounded-xl overflow-clip">
-          <DemoPortal id={video}>
-            {/* <iframe
+          {/* <iframe
               width="100%"
               height="100%"
               src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
@@ -37,6 +36,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
               className="rounded-xl"
               allowFullScreen
             /> */}
+          <DemoPortal id={video}>
             <video src="/videos/nba.mp4" controls />
           </DemoPortal>
         </div>
@@ -54,7 +54,7 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
                 Enable PiP
               </button>
               <button
-                onClick={() => disablePiP()}
+                onClick={disablePiP}
                 className="border rounded-full border-slate-300 px-4 h-8 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 duration-200 ease-out"
               >
                 Disable PiP
