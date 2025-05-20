@@ -25,19 +25,18 @@ export default function VideoPage({ params }: NextPage<{ video: string }, {}>) {
             {video}
           </Link>
         </div>
-        <div className="w-full h-[524px] bg-slate-200 rounded-xl overflow-clip">
-          {/* <iframe
+        <div className="w-full bg-slate-200 rounded-xl overflow-clip">
+          <DemoPortal id={video}>
+            {/* <iframe
               width="100%"
               height="100%"
               src="https://www.youtube.com/embed/IO21Ejtu-Qs?si=BqhoY1vBhN_7rLVt&autoplay=1"
               title="YouTube video player"
               allow="accelerometer; autoplay; encrypted-media; web-share"
               referrerPolicy="strict-origin-when-cross-origin"
-              className="rounded-xl"
               allowFullScreen
             /> */}
-          <DemoPortal id={video}>
-            <video src="/videos/nba.mp4" controls />
+            <video src={"/videos/nba.mp4"} controls />
           </DemoPortal>
         </div>
         <div className="flex flex-col gap-2 p-1">

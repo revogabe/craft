@@ -265,7 +265,7 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
     if (resizing) return;
     e.preventDefault();
     e.stopPropagation();
-    // Sincroniza posição livre antes do drag (caso estava snapped)
+
     if (snapMode && pictureRef.current) {
       const rect = pictureRef.current.getBoundingClientRect();
       setPosition({ x: rect.left, y: rect.top });
@@ -398,8 +398,11 @@ const DemoPicture = (props: DemoPictureProps & DemoPicturePrivateProps) => {
         </div>
         <div
           onMouseDown={handleDragStart}
-          className="absolute inset-0 bg-red-500/50 z-50"
+          className="absolute inset-0 z-50"
           style={{
+            pointerEvents: "visibleFill",
+            backgroundColor:
+              dragging || resizing ? "rgba(0, 0, 0, 0.5)" : "transparent",
             cursor: dragging || resizing ? "grabbing" : "grab",
           }}
         />
