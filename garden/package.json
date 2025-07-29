@@ -10,10 +10,17 @@
   },
   "dependencies": {
     "@mux/mux-player-react": "^3.4.0",
+    "@react-leaflet/core": "^3.0.0",
+    "@tambo-ai/react": "^0.39.0",
+    "class-variance-authority": "^0.7.1",
+    "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
+    "leaflet.markercluster": "^1.5.3",
     "next": "15.3.2",
     "re-resizable": "^6.11.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
     "react-resizable": "^3.0.5"
   },
   "devDependencies": {
@@ -22,8 +29,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
+    "clsx": "^2.1.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
+    "postcss": "^8.5.6",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
